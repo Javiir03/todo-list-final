@@ -2,8 +2,8 @@
 
 const express = require("express");
 const bodyParser = require("body-parser");
-// Asegúrate de que el archivo date.js existe en tu carpeta, si no, comenta esta línea
-const date = require(__dirname + "/date.js");
+// ELIMINAMOS LA DEPENDENCIA DE date.js PARA EVITAR ERRORES
+// const date = require(__dirname + "/date.js"); 
 
 const app = express();
 
@@ -22,7 +22,6 @@ items.set('2', 'Cocinar comida');
 items.set('3', 'Comer comida');
 
 // --- FUNCIÓN DE SEGURIDAD (ANTI-XSS) ---
-// Esta función convierte caracteres peligrosos en seguros
 function escapeHtml(text) {
   if (!text) return text;
   return text
@@ -33,13 +32,22 @@ function escapeHtml(text) {
     .replace(/'/g, "&#039;");
 }
 
+// --- GENERADOR DE FECHA SIMPLE (Dentro del mismo archivo) ---
+function getCurrentDate() {
+    const today = new Date();
+    const options = {
+        weekday: "long",
+        day: "numeric",
+        month: "long"
+    };
+    return today.toLocaleDateString("en-US", options);
+}
+
 // --- RUTAS ---
 
 // 1. Ruta Principal (General List)
 app.get("/", function (req, res) {
-  // Si date.js da error, cambia 'day' por un string fijo como "Hoy"
-  const day = date.getDay();
-
+  const day = getCurrentDate(); // Usamos la función interna
   const itemList = Array.from(items, ([uid, text]) => ({ uid, text }));
   
   res.render("list-map", { listTitle: day, newListItems: itemList });
@@ -47,14 +55,11 @@ app.get("/", function (req, res) {
 
 // 2. Ruta POST (Añadir Tarea)
 app.post("/", function (req, res) {
-  // PROTECCIÓN XSS: Limpiamos la entrada antes de guardarla
   const rawItem = req.body.newItem;
   const itemText = escapeHtml(rawItem); 
-  
   const listName = req.body.listName;
   const uid = Date.now().toString(); 
 
-  // Validación: No guardar tareas vacías
   if (itemText.trim().length === 0) {
       if (listName === "Work") return res.redirect("/work");
       return res.redirect("/");
@@ -78,8 +83,9 @@ app.get("/work", function (req, res) {
 // 4. Ruta Borrar
 app.post("/delete", function (req, res) {
   const uidToDelete = req.body.uid;
-  const listName = req.body.listName;
+  const listName = req.body.listName; // En tu EJS esto es el título de la lista
 
+  // TRUCO: A veces el título viene con fecha, así que miramos si NO es Work
   if (listName === "Work") {
     workItems.delete(uidToDelete);
     res.redirect("/work");
