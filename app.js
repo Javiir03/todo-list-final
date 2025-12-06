@@ -7,11 +7,11 @@ const date = require(__dirname + "/date.js");
 
 const app = express();
 
-// 🟢 Conexión a MongoDB Atlas
-mongoose.connect("mongodb+srv://javierizquierdorodriguez03_db_user:Promazingerz123@cluster0.qvnn6km.mongodb.net/todolistDB", {
+mongoose.connect("mongodb+srv://javierizquierdorodriguez03_db_user:Promazingerz123%2C@cluster0.qvnn6km.mongodb.net/todolistDB", {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
+
 
 // 🟢 Schema y Modelo
 const itemsSchema = new mongoose.Schema({
@@ -69,3 +69,4 @@ app.get("/about", function (req, res) {
 app.listen(3000, function () {
   console.log("Server started on port 3000");
 });
+
