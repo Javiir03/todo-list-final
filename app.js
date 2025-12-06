@@ -2,6 +2,7 @@
 
 // Import the express module to use its functionalities for creating the server.
 const express = require("express");
+const mongoose = require("mongoose");
 
 // Import the body-parser module, which is used to parse incoming request bodies before your handlers,
 // available under the req.body property.
@@ -13,6 +14,21 @@ const date = require(__dirname + "/date.js");
 
 // Initialize a new express application.
 const app = express();
+mongoose.connect("mongodb+srv://javierizquierdorodriguez03_db_user:Promazingerz123,@cluster0.qvnn6km.mongodb.net/todolistDB", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
+
+const itemsSchema = new mongoose.Schema({
+  name: String
+});
+
+const Item = mongoose.model("Item", itemsSchema);
+const item1 = new Item({ name: "Buy Food" });
+const item2 = new Item({ name: "Cook Food" });
+const item3 = new Item({ name: "Eat Food" });
+
+const defaultItems = [item1, item2, item3];
 
 // Set EJS as the templating engine for the express application.
 app.set('view engine', 'ejs');
@@ -23,26 +39,39 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Serve static files, such as CSS or JS, from the 'public' directory.
 app.use(express.static("public"));
 
-// Items array to store the to-do list items.
-const items = ["Buy Food", "Cook Food", "Eat Food"];
-
-// Separate array to store work-related to-do items.
-const workItems = [];
-
-// Define a route handler for the root route (homepage).
 app.get("/", function (req, res) {
-  // Call the getDate function from our date module which returns the current date formatted.
-  const day = date.getDate();
+
+  Item.find({})
+    .then(function (foundItems) {
+
+      if (foundItems.length === 0) {
+        Item.insertMany(defaultItems)
+          .then(() => {
+            console.log("Inserted default items");
+          })
+          .catch(err => console.log(err));
+        res.redirect("/");
+      } else {
+        const day = date.getDate();
+        res.render("list", { listTitle: day, newListItems: foundItems });
+      }
+
+    });
+
+});
+
 
   // Render the 'list' EJS template and pass in a JavaScript object containing data for the template.
   // 'listTitle' is set to the current day and 'newListItems' is set to the items in our to-do list.
   res.render("list", { listTitle: day, newListItems: items });
 });
 
-// Define a route handler for HTTP POST requests to the root route.
 app.post("/", function (req, res) {
-  // Retrieve the new item from the form input named 'newItem' (from the body of the POST request).
-  const item = req.body.newItem;
+  const itemName = req.body.newItem;
+
+  const item = new Item({ name: itemName });
+  item.save().then(() => res.redirect("/"));
+});
 
   // Check if the POST request came from the 'Work' list form.
   if (req.body.list === "Work") {
@@ -74,3 +103,4 @@ app.get("/about", function (req, res) {
 app.listen(3000, function () {
   console.log("Server started on port 3000");
 });
+
